@@ -22,7 +22,7 @@ export const getData = async (endpoint: string) => {
     throw error;
 
   } finally {
-    console.log(`[GET] /${endpoint} selesai.`);
+    console.log(`[GET] /${endpoint} Selesai`);
   }
 };
 
@@ -49,7 +49,7 @@ export const postData = async (endpoint: string, body: Record<string, any>) => {
     throw error;
 
   } finally {
-    console.log(`[POST] /${endpoint} selesai.`);
+    console.log(`[POST] /${endpoint} Selesai`);
   }
 };
 
@@ -78,7 +78,7 @@ export const login = async (email: string, password: string) => {
     throw error;
 
   } finally {
-    console.log('[LOGIN] selesai.');
+    console.log('[LOGIN] Selesai');
   }
 };
 
@@ -102,6 +102,6 @@ export const logout = async () => {
     throw error;
 
   } finally {
-    console.log('[LOGOUT] selesai.');
+    console.log('[LOGOUT] Selesai');
   }
 };
