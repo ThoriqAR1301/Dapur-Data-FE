@@ -1,98 +1,261 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useRouter } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Colors, Spacing } from '../../constants/theme';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+type User = {
+  name: string;
+  jurusan?: string;
+  kelas?: string;
+};
 
-export default function HomeScreen() {
+export default function DashboardScreen() {
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      try {
+        const raw = await AsyncStorage.getItem('user');
+        if (raw) setUser(JSON.parse(raw));
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadUser();
+  }, []);
+
+  const stats = [
+    { num: '12', label: 'PORTOFOLIO' },
+    { num: '3', label: 'SERTIFIKASI' },
+    { num: '5', label: 'PRESTASI' },
+    { num: '85', label: 'RATA NILAI' },
+  ];
+
+  const menus = [
+    { icon: '👤', label: 'PROFIL', route: '/profile' },
+    { icon: '📊', label: 'NILAI', route: null },
+    { icon: '⊡', label: 'PORTOFOLIO', route: '/(tabs)/explore' },
+    { icon: '🏆', label: 'PRESTASI', route: null },
+    { icon: '✓', label: 'SERTIFIKASI', route: '/(tabs)/sertifikat' },
+    { icon: '📄', label: 'CIS', route: null },
+  ];
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={Colors.orange} />
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity>
+          <Text style={styles.menuIcon}>☰</Text>
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>STUDENT PROFILE</Text>
+        <TouchableOpacity onPress={() => router.push('/(tabs)/profile')}>
+          <View style={styles.avatarBtn}>
+            <Text>👤</Text>
+          </View>
+        </TouchableOpacity>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        <View style={styles.heroCard}>
+          <View style={styles.avatarBig}>
+            <Text style={{ fontSize: 32 }}>👨‍💼</Text>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.heroGreet}>Selamat Datang,</Text>
+            <Text style={styles.heroName}>{user?.name ?? 'Siswa'}</Text>
+            <Text style={styles.heroKelas}>
+              {user?.kelas ?? 'XII'} — {user?.jurusan ?? 'RPL'}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.statsGrid}>
+          {stats.map((s, i) => (
+            <View key={i} style={styles.statCard}>
+              <Text style={styles.statNum}>{s.num}</Text>
+              <Text style={styles.statLabel}>{s.label}</Text>
+            </View>
+          ))}
+        </View>
+
+        <View style={styles.progressCard}>
+          <View style={styles.progressRow}>
+            <Text style={styles.progressLabel}>Kelengkapan Profil</Text>
+            <Text style={styles.progressPct}>80%</Text>
+          </View>
+          <View style={styles.progressTrack}>
+            <View style={[styles.progressFill, { width: '80%' }]} />
+          </View>
+        </View>
+
+        <View style={styles.menuGrid}>
+          {menus.map((m, i) => (
+            <TouchableOpacity
+              key={i}
+              style={styles.menuCard}
+              onPress={() => m.route && router.push(m.route as any)}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.menuIcon2}>{m.icon}</Text>
+              <Text style={styles.menuLabel}>{m.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={{ height: 24 }} />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
+  container: { flex: 1, backgroundColor: Colors.light },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.light },
+  header: {
+    backgroundColor: Colors.dark,
+    paddingTop: 52,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    justifyContent: 'space-between',
+    borderBottomWidth: 3,
+    borderBottomColor: Colors.black,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  menuIcon: { color: Colors.white, fontSize: 22 },
+  headerTitle: { fontFamily: 'SpaceMono', fontSize: 13, color: Colors.white, letterSpacing: 2 },
+  avatarBtn: {
+    width: 32, height: 32, backgroundColor: Colors.white,
+    borderWidth: 2, borderColor: Colors.orange,
+    alignItems: 'center', justifyContent: 'center',
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  scroll: { flex: 1, padding: Spacing.md },
+  heroCard: {
+    backgroundColor: Colors.dark,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    padding: Spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginBottom: 12,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 6,
+  },
+  avatarBig: {
+    width: 70, height: 70,
+    backgroundColor: Colors.grayLight,
+    borderWidth: 3,
+    borderColor: Colors.orange,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroGreet: { color: Colors.gray, fontSize: 12, marginBottom: 4 },
+  heroName: {
+    fontFamily: 'SpaceMono',
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: Colors.white,
+    marginBottom: 4,
+  },
+  heroKelas: {
+    fontFamily: 'SpaceMono',
+    fontWeight: 'bold',
+    fontSize: 12,
+    color: Colors.orange,
+  },
+  statsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 12,
+  },
+  statCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: Colors.white,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    padding: 14,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  statNum: {
+    fontFamily: 'SpaceMono',
+    fontWeight: 'bold',
+    fontSize: 24,
+    color: Colors.orange,
+  },
+  statLabel: {
+    fontFamily: 'SpaceMono',
+    fontSize: 10,
+    letterSpacing: 1,
+    color: Colors.black,
+    marginTop: 2,
+  },
+  progressCard: {
+    backgroundColor: Colors.white,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    padding: 14,
+    marginBottom: 12,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  progressRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 10 },
+  progressLabel: { fontWeight: '600', fontSize: 13 },
+  progressPct: { fontFamily: 'SpaceMono', fontWeight: 'bold', fontSize: 13, color: Colors.orange },
+  progressTrack: {
+    backgroundColor: Colors.grayLight,
+    height: 12,
+    borderWidth: 2,
+    borderColor: Colors.black,
+  },
+  progressFill: { backgroundColor: Colors.orange, height: '100%' },
+  menuGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  menuCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: Colors.white,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    padding: 20,
+    alignItems: 'center',
+    gap: 8,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 4,
+  },
+  menuIcon2: { fontSize: 24 },
+  menuLabel: {
+    fontFamily: 'SpaceMono',
+    fontSize: 10,
+    letterSpacing: 1,
+    color: Colors.black,
   },
 });
