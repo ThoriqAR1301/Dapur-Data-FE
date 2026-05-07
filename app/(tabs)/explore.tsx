@@ -1,112 +1,274 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect, useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
+import { Colors, Spacing } from '../../constants/theme';
+import { getData } from '../../services/api';
 
-import { Collapsible } from '@/components/ui/collapsible';
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+type Portfolio = {
+  id: number;
+  judul: string;
+  kategori: string;
+  nilai: string;
+  tanggal?: string;
+  tools: string;
+  teknologi: string;
+  deskripsi: string;
+};
 
-export default function TabTwoScreen() {
+function PortfolioCard({ item, onPress }: { item: Portfolio; onPress: () => void }) {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
+    <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.85}>
+      <View style={styles.thumbnail}>
+        <Text style={{ fontSize: 40, opacity: 0.4 }}>⚙️</Text>
+        <View style={styles.badgeGrade}>
+          <Text style={styles.badgeGradeText}>{item.nilai} GRADED</Text>
+        </View>
+      </View>
+
+      <View style={styles.cardBody}>
+        <Text style={styles.cardTitle}>{item.judul}</Text>
+
+        <View style={styles.cardMeta}>
+          <Text style={styles.cardDate}>{item.tanggal ?? '—'}</Text>
+          <View style={styles.badgeKategori}>
+            <Text style={styles.badgeKategoriText}>{item.kategori}</Text>
+          </View>
+        </View>
+
+        <Text style={styles.cardTools}>🔧 {item.tools}</Text>
+        <Text style={styles.cardTeknologi}>💻 {item.teknologi}</Text>
+
+        <TouchableOpacity style={styles.btnView} onPress={onPress}>
+          <Text style={styles.btnViewText}>👁  VIEW PROJECT</Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+function EmptyState() {
+  return (
+    <View style={styles.emptyContainer}>
+      <Text style={styles.emptyIcon}>⊡</Text>
+      <Text style={styles.emptyTitle}>Belum Ada Portfolio</Text>
+      <Text style={styles.emptySubtitle}>Tambahkan Proyek Pertama Kamu!</Text>
+    </View>
+  );
+}
+
+export default function PortfolioScreen() {
+  const router = useRouter();
+  const [data, setData] = useState<Portfolio[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchData = async () => {
+    try {
+      const result = await getData('portofolio');
+      setData(result.data ?? []);
+    } catch (e) {
+      console.error('Gagal Ambil Data Portfolio :', e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useFocusEffect(
+    useCallback(() => {
+      setLoading(true);
+      fetchData();
+    }, [])
+  );
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchData();
+  };
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity>
+          <Text style={styles.headerMenu}>☰</Text>
+        </TouchableOpacity>
+        <View style={styles.headerBadge}>
+          <Text style={styles.headerBadgeText}>PORTFOLIO_SYSTEM</Text>
+        </View>
+        <View style={styles.avatarBtn}>
+          <Text>👤</Text>
+        </View>
+      </View>
+
+      <View style={styles.titleRow}>
+        <Text style={styles.pageTitle}>← PORTFOLIO</Text>
+        <View style={styles.titleUnderline} />
+      </View>
+
+      {loading ? (
+        <View style={styles.spinnerContainer}>
+          <ActivityIndicator size="large" color={Colors.orange} />
+          <Text style={styles.spinnerText}>Memuat Data...</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={data}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={({ item }) => (
+            <PortfolioCard
+              item={item}
+              onPress={() => router.push(`/portfolio/${item.id}` as any)}
+            />
+          )}
+          contentContainerStyle={[
+            styles.listContent,
+            data.length === 0 && styles.listEmpty,
+          ]}
+          ListEmptyComponent={<EmptyState />}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[Colors.orange]}
+              tintColor={Colors.orange}
+            />
+          }
+          showsVerticalScrollIndicator={false}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/react-logo.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+      )}
+
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/portfolio/add' as any)}
+        activeOpacity={0.85}
+      >
+        <Text style={styles.fabText}>+</Text>
+      </TouchableOpacity>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
+  container: { flex: 1, backgroundColor: Colors.light },
+  header: {
+    backgroundColor: Colors.dark,
+    paddingTop: 52,
+    paddingHorizontal: Spacing.md,
+    paddingBottom: 14,
     flexDirection: 'row',
-    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderBottomWidth: 3,
+    borderBottomColor: Colors.black,
   },
+  headerMenu: { color: Colors.white, fontSize: 22 },
+  headerBadge: {
+    borderWidth: 2,
+    borderColor: Colors.orange,
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+  },
+  headerBadgeText: {
+    fontFamily: 'SpaceMono',
+    fontSize: 11,
+    color: Colors.orange,
+  },
+  avatarBtn: {
+    width: 32, height: 32,
+    backgroundColor: Colors.white,
+    borderWidth: 2,
+    borderColor: Colors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  titleRow: { padding: Spacing.md, paddingBottom: 0 },
+  pageTitle: {
+    fontFamily: 'SpaceMono',
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: Colors.black,
+    letterSpacing: -1,
+    marginBottom: 4,
+  },
+  titleUnderline: { height: 3, backgroundColor: Colors.black, marginBottom: 8 },
+
+  spinnerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  spinnerText: { fontFamily: 'SpaceMono', fontSize: 12, color: Colors.gray, letterSpacing: 1 },
+
+  listContent: { padding: Spacing.md, gap: 16 },
+  listEmpty: { flex: 1 },
+
+  card: {
+    backgroundColor: Colors.white,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    shadowColor: Colors.black,
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 6,
+    overflow: 'hidden',
+  },
+  thumbnail: {
+    height: 160,
+    backgroundColor: Colors.dark,
+    alignItems: 'center',
+    justifyContent: 'center',
+    position: 'relative',
+  },
+  badgeGrade: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: Colors.orange,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+  },
+  badgeGradeText: { fontFamily: 'SpaceMono', fontSize: 10, color: Colors.white, fontWeight: 'bold' },
+  cardBody: { padding: 14 },
+  cardTitle: {
+    fontFamily: 'SpaceMono',
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: Colors.black,
+    marginBottom: 6,
+    letterSpacing: -0.5,
+  },
+  cardMeta: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  cardDate: { fontSize: 12, color: Colors.gray },
+  badgeKategori: { backgroundColor: Colors.dark, paddingVertical: 3, paddingHorizontal: 8 },
+  badgeKategoriText: { fontFamily: 'SpaceMono', fontSize: 10, color: Colors.white, fontWeight: 'bold' },
+  cardTools: { fontSize: 12, color: Colors.gray, marginBottom: 2 },
+  cardTeknologi: { fontSize: 12, color: Colors.gray, marginBottom: 12 },
+  btnView: {
+    borderWidth: 2,
+    borderColor: Colors.black,
+    padding: 10,
+    alignItems: 'center',
+  },
+  btnViewText: { fontFamily: 'SpaceMono', fontSize: 11, letterSpacing: 1 },
+
+  emptyContainer: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingTop: 80, gap: 12 },
+  emptyIcon: { fontSize: 48, opacity: 0.3 },
+  emptyTitle: { fontFamily: 'SpaceMono', fontSize: 16, color: Colors.gray, fontWeight: 'bold' },
+  emptySubtitle: { fontSize: 13, color: Colors.gray },
+
+  fab: {
+    position: 'absolute',
+    bottom: 80,
+    right: 20,
+    width: 52,
+    height: 52,
+    backgroundColor: Colors.orange,
+    borderWidth: 3,
+    borderColor: Colors.black,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: Colors.black,
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 8,
+  },
+  fabText: { fontSize: 24, color: Colors.white, fontWeight: 'bold' },
 });
